@@ -1,5 +1,5 @@
 type ScaleInputProps = {
-  value: number;
+  value: number | null;
   onChange: (value: number) => void;
   min?: number;
   max?: number;

@@ -6,7 +6,7 @@ import { ToolLandscape } from "@/components/charts/ToolLandscape";
 import { UrgencySpectrum } from "@/components/charts/UrgencySpectrum";
 import { WordCloud } from "@/components/charts/WordCloud";
 import { Badge } from "@/components/ui/Badge";
-import { listResponses } from "@/lib/db";
+import { isSupabaseConfigured, listResponses } from "@/lib/db";
 import { buildConversationStarters, getAverageMaturity, getMostCommonBarrier, getTopUseCase } from "@/lib/scoring";
 
 function countByLabel(values: string[]) {
@@ -38,6 +38,7 @@ function ChartCard({ title, children }: { title: string; children: React.ReactNo
 
 export default async function AdminPage() {
   const responses = await listResponses();
+  const usingSupabase = isSupabaseConfigured();
   const conversationStarters = buildConversationStarters(responses);
   const usageData = countByLabel(responses.map((response) => response.answers.q1));
   const toolData = countByLabel(responses.flatMap((response) => response.answers.q2));
@@ -54,6 +55,12 @@ export default async function AdminPage() {
         <Badge>Admin dashboard</Badge>
         <h1 className="font-serif text-4xl text-mdlinx-navy">AI Readiness Snapshot</h1>
       </div>
+
+      {!usingSupabase ? (
+        <div className="border border-dotted border-mdlinx-secondary/30 bg-white p-4 text-sm leading-7 text-mdlinx-secondary">
+          Supabase is not configured yet, so the dashboard is currently rendering mock responses.
+        </div>
+      ) : null}
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <SummaryCard label="Total responses" value={String(responses.length)} />

@@ -1,4 +1,46 @@
-import { defaultAnswers, type QuizSubmission } from "@/lib/questions";
+import "server-only";
+
+import { createClient } from "@supabase/supabase-js";
+
+import { sampleAnswers, type QuizSubmission } from "@/lib/questions";
+
+type ResponseRow = {
+  id: number;
+  name: string;
+  role: QuizSubmission["role"];
+  answers: QuizSubmission["answers"];
+  submitted_at: string;
+};
+
+function getSupabaseClient() {
+  const supabaseUrl = process.env.SUPABASE_URL;
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseUrl || !supabaseKey) {
+    return null;
+  }
+
+  return createClient(supabaseUrl, supabaseKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  });
+}
+
+function mapResponseRow(row: ResponseRow): QuizSubmission {
+  return {
+    id: row.id,
+    name: row.name,
+    role: row.role,
+    answers: row.answers,
+    submittedAt: row.submitted_at,
+  };
+}
+
+export function isSupabaseConfigured() {
+  return Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY);
+}
 
 const mockResponses: QuizSubmission[] = [
   {
@@ -7,7 +49,7 @@ const mockResponses: QuizSubmission[] = [
     role: "Executive leadership",
     submittedAt: "2026-03-13T15:00:00.000Z",
     answers: {
-      ...defaultAnswers,
+      ...sampleAnswers,
       q1: "daily",
       q2: ["chatgpt", "claude", "perplexity"],
       q3: ["research", "analysis", "automation"],
@@ -26,7 +68,7 @@ const mockResponses: QuizSubmission[] = [
     role: "Product and engineering",
     submittedAt: "2026-03-13T15:10:00.000Z",
     answers: {
-      ...defaultAnswers,
+      ...sampleAnswers,
       q1: "daily",
       q2: ["chatgpt", "copilot"],
       q3: ["coding", "automation", "analysis"],
@@ -45,7 +87,7 @@ const mockResponses: QuizSubmission[] = [
     role: "Editorial",
     submittedAt: "2026-03-13T15:20:00.000Z",
     answers: {
-      ...defaultAnswers,
+      ...sampleAnswers,
       q1: "weekly",
       q2: ["chatgpt", "claude"],
       q3: ["research", "content_creation"],
@@ -61,10 +103,45 @@ const mockResponses: QuizSubmission[] = [
 ];
 
 export async function listResponses(): Promise<QuizSubmission[]> {
+  const supabase = getSupabaseClient();
+
+  if (supabase) {
+    const { data, error } = await supabase
+      .from("responses")
+      .select("id, name, role, answers, submitted_at")
+      .order("submitted_at", { ascending: false });
+
+    if (error) {
+      throw new Error(`Failed to load responses from Supabase: ${error.message}`);
+    }
+
+    return (data as ResponseRow[]).map(mapResponseRow);
+  }
+
   return mockResponses;
 }
 
 export async function saveResponse(submission: QuizSubmission): Promise<QuizSubmission> {
+  const supabase = getSupabaseClient();
+
+  if (supabase) {
+    const { data, error } = await supabase
+      .from("responses")
+      .insert({
+        name: submission.name,
+        role: submission.role,
+        answers: submission.answers,
+      })
+      .select("id, name, role, answers, submitted_at")
+      .single();
+
+    if (error) {
+      throw new Error(`Failed to save response to Supabase: ${error.message}`);
+    }
+
+    return mapResponseRow(data as ResponseRow);
+  }
+
   const nextSubmission = {
     ...submission,
     id: mockResponses.length + 1,

@@ -3,15 +3,16 @@ import { CheckboxGroup } from "@/components/ui/CheckboxGroup";
 import { RadioGroup } from "@/components/ui/RadioGroup";
 import { ScaleInput } from "@/components/ui/ScaleInput";
 import { TextArea } from "@/components/ui/TextArea";
-import type { QuestionDefinition } from "@/lib/questions";
+import type { QuestionDefinition, QuizDraftAnswers } from "@/lib/questions";
 
 type QuestionCardProps = {
   question: QuestionDefinition;
-  value: string | string[] | number;
-  onChange: (value: string | string[] | number) => void;
+  value: QuizDraftAnswers[keyof QuizDraftAnswers];
+  onChange: (value: QuizDraftAnswers[keyof QuizDraftAnswers]) => void;
+  error?: string;
 };
 
-export function QuestionCard({ question, value, onChange }: QuestionCardProps) {
+export function QuestionCard({ question, value, onChange, error }: QuestionCardProps) {
   return (
     <article className="space-y-5 border border-dotted border-mdlinx-secondary/30 bg-white p-6">
       <div className="space-y-3">
@@ -33,19 +34,26 @@ export function QuestionCard({ question, value, onChange }: QuestionCardProps) {
       ) : null}
 
       {(question.type === "multiple" || question.type === "ranking") && question.options ? (
-        <CheckboxGroup
-          options={question.options}
-          values={Array.isArray(value) ? value : []}
-          onChange={(nextValues) => onChange(nextValues)}
-        />
+        <div className="space-y-2">
+          <CheckboxGroup
+            options={question.options}
+            values={Array.isArray(value) ? value : []}
+            maxSelections={question.type === "ranking" ? 3 : undefined}
+            showSelectionOrder={question.type === "ranking"}
+            onChange={(nextValues) => onChange(nextValues)}
+          />
+          {question.type === "ranking" ? (
+            <p className="text-xs uppercase tracking-[0.14em] text-mdlinx-secondary">Pick exactly 3 priorities.</p>
+          ) : null}
+        </div>
       ) : null}
 
       {question.type === "scale" ? (
         <ScaleInput
-          value={typeof value === "number" ? value : question.min ?? 1}
+          value={typeof value === "number" ? value : null}
           min={question.min}
           max={question.max}
-          onChange={(nextValue) => onChange(nextValue)}
+          onChange={(nextValue) => onChange(nextValue as QuizDraftAnswers[keyof QuizDraftAnswers])}
         />
       ) : null}
 
@@ -56,6 +64,8 @@ export function QuestionCard({ question, value, onChange }: QuestionCardProps) {
           placeholder="Share the most interesting thing you'd want on the table at dinner."
         />
       ) : null}
+
+      {error ? <p className="text-sm text-mdlinx-red">{error}</p> : null}
     </article>
   );
 }

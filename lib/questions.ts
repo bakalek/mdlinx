@@ -1,3 +1,12 @@
+export type UsageFrequency = "never" | "monthly" | "weekly" | "daily";
+export type BarrierOption = "data_quality" | "technical_talent" | "governance" | "change_management" | "budget";
+export type AdvantageOption =
+  | "first_party_data"
+  | "audience_trust"
+  | "content_archive"
+  | "distribution"
+  | "domain_expertise";
+
 export type RoleOption =
   | "Executive leadership"
   | "Editorial"
@@ -7,15 +16,28 @@ export type RoleOption =
   | "Operations";
 
 export type QuizAnswers = {
-  q1: "never" | "monthly" | "weekly" | "daily";
+  q1: UsageFrequency;
   q2: string[];
   q3: string[];
   q4: 1 | 2 | 3 | 4 | 5;
   q5: string[];
-  q6: "data_quality" | "technical_talent" | "governance" | "change_management" | "budget";
+  q6: BarrierOption;
   q7: string[];
   q8: 1 | 2 | 3 | 4 | 5;
-  q9: "first_party_data" | "audience_trust" | "content_archive" | "distribution" | "domain_expertise";
+  q9: AdvantageOption;
+  q10: string;
+};
+
+export type QuizDraftAnswers = {
+  q1: UsageFrequency | "";
+  q2: string[];
+  q3: string[];
+  q4: 1 | 2 | 3 | 4 | 5 | null;
+  q5: string[];
+  q6: BarrierOption | "";
+  q7: string[];
+  q8: 1 | 2 | 3 | 4 | 5 | null;
+  q9: AdvantageOption | "";
   q10: string;
 };
 
@@ -134,8 +156,8 @@ export const questions: QuestionDefinition[] = [
     id: "q7",
     section: "Strategy",
     label: "Q7",
-    prompt: "Rank the strategic AI priorities for the next 12 months.",
-    description: "Choose the top items in rough priority order.",
+    prompt: "Pick the top 3 strategic AI priorities for the next 12 months.",
+    description: "Select exactly three. The order you click becomes the rough priority order.",
     type: "ranking",
     options: [
       { value: "personalized_content", label: "Personalized content" },
@@ -177,7 +199,20 @@ export const questions: QuestionDefinition[] = [
   },
 ];
 
-export const defaultAnswers: QuizAnswers = {
+export const emptyDraftAnswers: QuizDraftAnswers = {
+  q1: "",
+  q2: [],
+  q3: [],
+  q4: null,
+  q5: [],
+  q6: "",
+  q7: [],
+  q8: null,
+  q9: "",
+  q10: "",
+};
+
+export const sampleAnswers: QuizAnswers = {
   q1: "weekly",
   q2: [],
   q3: [],
