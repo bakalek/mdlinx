@@ -77,7 +77,7 @@ export function QuizForm() {
       <ProgressBar currentStep={step + 1} totalSteps={totalSteps} />
 
       {step === 0 ? (
-        <section className="space-y-6 border border-dotted border-mdlinx-secondary/30 bg-white p-6">
+        <section className="space-y-6 border border-dotted border-mdlinx-secondary/30 bg-white p-5 sm:p-6">
           <Badge>Respondent</Badge>
           <div className="grid gap-5 md:grid-cols-2">
             <label className="space-y-2 text-sm font-medium text-mdlinx-secondary">
@@ -117,11 +117,11 @@ export function QuizForm() {
       ) : (
         <section className="space-y-6">
           {currentSectionMeta ? (
-            <div className="space-y-3 border border-dotted border-mdlinx-secondary/30 bg-white p-6">
+            <div className="space-y-3 border border-dotted border-mdlinx-secondary/30 bg-white p-5 sm:p-6">
               <Badge>{currentSectionMeta.title}</Badge>
               <div className="space-y-2">
-                <h2 className="font-serif text-3xl text-mdlinx-navy">{currentSectionMeta.title}</h2>
-                <p className="text-mdlinx-secondary">{currentSectionMeta.description}</p>
+                <h2 className="font-serif text-2xl text-mdlinx-navy sm:text-3xl">{currentSectionMeta.title}</h2>
+                <p className="text-sm leading-7 text-mdlinx-secondary sm:text-base">{currentSectionMeta.description}</p>
               </div>
             </div>
           ) : null}
@@ -147,7 +147,7 @@ export function QuizForm() {
 
       {submissionError ? <p className="text-sm text-mdlinx-red">{submissionError}</p> : null}
 
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
         <Button
           type="button"
           variant="secondary"
@@ -161,11 +161,11 @@ export function QuizForm() {
         </Button>
 
         {step < totalSteps - 1 ? (
-          <Button type="button" onClick={handleNextStep}>
+          <Button type="button" onClick={handleNextStep} className="w-full sm:w-auto">
             Next
           </Button>
         ) : (
-          <Button type="button" onClick={handleSubmit} disabled={submitting}>
+          <Button type="button" onClick={handleSubmit} disabled={submitting} className="w-full sm:w-auto">
             {submitting ? "Submitting..." : "Submit responses"}
           </Button>
         )}

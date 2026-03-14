@@ -409,3 +409,38 @@ export async function saveResponse(submission: QuizSubmission): Promise<QuizSubm
   mockResponses.push(nextSubmission);
   return nextSubmission;
 }
+
+export async function deleteResponse(responseId: number) {
+  const supabase = getSupabaseClient();
+
+  if (supabase) {
+    const { error } = await supabase.from("responses").delete().eq("id", responseId);
+
+    if (error) {
+      throw new Error(`Failed to delete response ${responseId}: ${error.message}`);
+    }
+
+    return;
+  }
+
+  const index = mockResponses.findIndex((response) => response.id === responseId);
+  if (index >= 0) {
+    mockResponses.splice(index, 1);
+  }
+}
+
+export async function deleteAllResponses() {
+  const supabase = getSupabaseClient();
+
+  if (supabase) {
+    const { error } = await supabase.from("responses").delete().gte("id", 0);
+
+    if (error) {
+      throw new Error(`Failed to clear responses: ${error.message}`);
+    }
+
+    return;
+  }
+
+  mockResponses.splice(0, mockResponses.length);
+}
