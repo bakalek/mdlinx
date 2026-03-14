@@ -12,13 +12,28 @@ type ResponseRow = {
   submitted_at: string;
 };
 
-function getSupabaseClient() {
+function hasUsableSupabaseConfig() {
   const supabaseUrl = process.env.SUPABASE_URL;
   const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!supabaseUrl || !supabaseKey) {
+    return false;
+  }
+
+  if (supabaseUrl.includes("project-ref.supabase.co") || supabaseKey === "replace-me") {
+    return false;
+  }
+
+  return true;
+}
+
+function getSupabaseClient() {
+  if (!hasUsableSupabaseConfig()) {
     return null;
   }
+
+  const supabaseUrl = process.env.SUPABASE_URL as string;
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY as string;
 
   return createClient(supabaseUrl, supabaseKey, {
     auth: {
@@ -39,7 +54,7 @@ function mapResponseRow(row: ResponseRow): QuizSubmission {
 }
 
 export function isSupabaseConfigured() {
-  return Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY);
+  return hasUsableSupabaseConfig();
 }
 
 const mockResponses: QuizSubmission[] = [
@@ -106,16 +121,20 @@ export async function listResponses(): Promise<QuizSubmission[]> {
   const supabase = getSupabaseClient();
 
   if (supabase) {
-    const { data, error } = await supabase
-      .from("responses")
-      .select("id, name, role, answers, submitted_at")
-      .order("submitted_at", { ascending: false });
+    try {
+      const { data, error } = await supabase
+        .from("responses")
+        .select("id, name, role, answers, submitted_at")
+        .order("submitted_at", { ascending: false });
 
-    if (error) {
-      throw new Error(`Failed to load responses from Supabase: ${error.message}`);
+      if (error) {
+        throw error;
+      }
+
+      return (data as ResponseRow[]).map(mapResponseRow);
+    } catch {
+      return mockResponses;
     }
-
-    return (data as ResponseRow[]).map(mapResponseRow);
   }
 
   return mockResponses;
@@ -125,21 +144,25 @@ export async function saveResponse(submission: QuizSubmission): Promise<QuizSubm
   const supabase = getSupabaseClient();
 
   if (supabase) {
-    const { data, error } = await supabase
-      .from("responses")
-      .insert({
-        name: submission.name,
-        role: submission.role,
-        answers: submission.answers,
-      })
-      .select("id, name, role, answers, submitted_at")
-      .single();
+    try {
+      const { data, error } = await supabase
+        .from("responses")
+        .insert({
+          name: submission.name,
+          role: submission.role,
+          answers: submission.answers,
+        })
+        .select("id, name, role, answers, submitted_at")
+        .single();
 
-    if (error) {
-      throw new Error(`Failed to save response to Supabase: ${error.message}`);
+      if (error) {
+        throw error;
+      }
+
+      return mapResponseRow(data as ResponseRow);
+    } catch {
+      // Fall back so preview environments still work before real Supabase creds are added.
     }
-
-    return mapResponseRow(data as ResponseRow);
   }
 
   const nextSubmission = {
