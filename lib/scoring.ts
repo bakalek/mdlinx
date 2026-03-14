@@ -44,26 +44,51 @@ function countValues(values: string[]): CountDatum[] {
 }
 
 function countSingleQuestion(responses: QuizSubmission[], questionId: SingleQuestionId): CountDatum[] {
-  return countValues(responses.map((response) => getOptionLabel(questionId, response.answers[questionId])));
+  return countValues(
+    responses.map((response) => {
+      const value = response.answers[questionId];
+      return typeof value === "string" ? getOptionLabel(questionId, value) : String(value ?? "n/a");
+    }),
+  );
 }
 
 function countMultiQuestion(responses: QuizSubmission[], questionId: MultiQuestionId): CountDatum[] {
-  return countValues(responses.flatMap((response) => response.answers[questionId].map((value) => getOptionLabel(questionId, value))));
+  return countValues(
+    responses.flatMap((response) => {
+      const values = response.answers[questionId];
+      return Array.isArray(values) ? values.map((value) => getOptionLabel(questionId, value)) : [];
+    }),
+  );
 }
 
 function averageScale(responses: QuizSubmission[], questionId: ScaleQuestionId): number {
-  if (responses.length === 0) {
+  const numericValues = responses.reduce<number[]>((accumulator, response) => {
+    const value = response.answers[questionId];
+
+    if (typeof value === "number") {
+      accumulator.push(value);
+    }
+
+    return accumulator;
+  }, []);
+
+  if (numericValues.length === 0) {
     return 0;
   }
 
-  const total = responses.reduce((sum, response) => sum + response.answers[questionId], 0);
-  return Number((total / responses.length).toFixed(1));
+  const total = numericValues.reduce((sum, value) => sum + value, 0);
+  return Number((total / numericValues.length).toFixed(1));
 }
 
 function buildWeightedRanking(responses: QuizSubmission[], questionId: "q10"): CountDatum[] {
   const weights = [3, 2, 1];
   const totals = responses.reduce<Record<string, number>>((accumulator, response) => {
-    response.answers[questionId].forEach((value, index) => {
+    const values = response.answers[questionId];
+    if (!Array.isArray(values)) {
+      return accumulator;
+    }
+
+    values.forEach((value, index) => {
       accumulator[value] = (accumulator[value] ?? 0) + (weights[index] ?? 1);
     });
 
@@ -80,6 +105,10 @@ function topLabel(data: CountDatum[]) {
 }
 
 function toThemeTokens(text: string) {
+  if (typeof text !== "string") {
+    return [];
+  }
+
   return text
     .toLowerCase()
     .split(/\W+/)

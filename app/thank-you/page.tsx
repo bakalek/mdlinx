@@ -9,15 +9,12 @@ export default function ThankYouPage() {
       <Badge>Thank you</Badge>
       <h1 className="font-serif text-4xl text-mdlinx-navy">Assessment submitted.</h1>
       <p className="text-mdlinx-secondary">
-        Your response is now part of the MDLinx assessment dataset. The admin dashboard combines team input, role-level
-        patterns, and AI-assisted analysis to help turn responses into strategic direction.
+        Your response is now part of the MDLinx assessment dataset and will help shape a clearer view of where AI,
+        publishing strategy, audience needs, and operational priorities intersect.
       </p>
-      <div className="flex justify-center gap-4">
+      <div className="flex justify-center">
         <Link href="/">
           <Button variant="secondary">Back home</Button>
-        </Link>
-        <Link href="/admin">
-          <Button>Open dashboard</Button>
         </Link>
       </div>
     </div>

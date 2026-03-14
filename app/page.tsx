@@ -21,9 +21,6 @@ export default function HomePage() {
           <Link href="/quiz">
             <Button>Start assessment</Button>
           </Link>
-          <Link href="/admin">
-            <Button variant="secondary">Preview dashboard</Button>
-          </Link>
         </div>
       </section>
 
@@ -33,8 +30,8 @@ export default function HomePage() {
           <h2 className="font-serif text-3xl text-mdlinx-navy">A clearer MDLinx strategy signal</h2>
           <ul className="space-y-3 text-sm leading-7 text-mdlinx-secondary">
             <li>A deeper assessment built around AI, publishing, audience, and commercialization realities.</li>
-            <li>A private dashboard with response patterns, role-based variation, and individual detail.</li>
-            <li>AI-generated analysis layered on top of the raw data to surface themes, risks, and opportunities.</li>
+            <li>Role-based input that surfaces where teams agree, diverge, or feel blocked.</li>
+            <li>Structured and open-ended questions designed to produce useful strategic signal, not just raw opinions.</li>
           </ul>
         </div>
       </aside>

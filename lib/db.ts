@@ -2,15 +2,151 @@ import "server-only";
 
 import { createClient } from "@supabase/supabase-js";
 
-import { sampleAnswers, type QuizSubmission } from "@/lib/questions";
+import { sampleAnswers, type QuizAnswers, type QuizSubmission, type RoleOption, type ScaleAnswer } from "@/lib/questions";
 
 type ResponseRow = {
   id: number;
   name: string;
   role: QuizSubmission["role"];
-  answers: QuizSubmission["answers"];
+  answers: unknown;
   submitted_at: string;
 };
+
+function asStringArray(value: unknown): string[] {
+  return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
+}
+
+function asString(value: unknown): string {
+  return typeof value === "string" ? value : "";
+}
+
+function asScale(value: unknown, fallback: ScaleAnswer): ScaleAnswer {
+  return value === 1 || value === 2 || value === 3 || value === 4 || value === 5 ? value : fallback;
+}
+
+function getDefaultPilotTeam(role: RoleOption): string[] {
+  switch (role) {
+    case "Executive leadership":
+      return ["leadership"];
+    case "Editorial and content":
+      return ["editorial"];
+    case "Sales and commercial":
+      return ["sales"];
+    case "Product and engineering":
+      return ["product"];
+    case "Data and analytics":
+      return ["data"];
+    case "Operations and audience":
+      return ["operations"];
+  }
+}
+
+function mapLegacyBarrierToCapabilityGap(value: string) {
+  switch (value) {
+    case "technical_talent":
+      return "ai_product_talent";
+    case "data_quality":
+      return "data_activation";
+    case "governance":
+      return "governance_playbook";
+    case "change_management":
+      return "change_leadership";
+    case "budget":
+      return "experimentation";
+    default:
+      return sampleAnswers.q14;
+  }
+}
+
+function mapLegacyBusinessAreasToWorkflowPressure(values: string[]) {
+  const mapped = values.flatMap((value) => {
+    switch (value) {
+      case "content_creation":
+        return ["editorial_velocity", "seo_discovery"];
+      case "internal_productivity":
+        return ["analytics_storytelling"];
+      case "audience_personalization":
+        return ["audience_personalization", "email_engagement"];
+      case "sales_enablement":
+        return ["sponsor_performance"];
+      case "advertiser_products":
+        return ["sponsor_performance"];
+      default:
+        return [];
+    }
+  });
+
+  return mapped.length > 0 ? Array.from(new Set(mapped)) : sampleAnswers.q6;
+}
+
+function mapLegacyPriorities(values: string[]) {
+  const mapped = values.flatMap((value) => {
+    switch (value) {
+      case "personalized_content":
+        return ["personalized_content"];
+      case "internal_efficiency":
+        return ["workflow_efficiency"];
+      case "new_ai_features":
+        return ["new_products"];
+      case "advertiser_intelligence":
+        return ["commercial_intelligence"];
+      case "clinical_search":
+        return ["clinical_search"];
+      default:
+        return [];
+    }
+  });
+
+  return mapped.length > 0 ? mapped.slice(0, 3) : sampleAnswers.q10;
+}
+
+function mapLegacyAdvantage(value: string) {
+  switch (value) {
+    case "audience_trust":
+      return ["audience_trust"];
+    case "first_party_data":
+      return ["first_party_data"];
+    case "content_archive":
+      return ["content_archive"];
+    case "distribution":
+      return ["workflow_integration"];
+    case "domain_expertise":
+      return ["clinical_context"];
+    default:
+      return sampleAnswers.q12;
+  }
+}
+
+function normalizeAnswers(value: unknown, role: RoleOption): QuizAnswers {
+  const raw = value && typeof value === "object" ? (value as Record<string, unknown>) : {};
+  const legacyBusinessAreas = asStringArray(raw.q5);
+  const legacyPriorities = asStringArray(raw.q7);
+  const legacyBarrier = asString(raw.q6);
+  const legacyAdvantage = asString(raw.q9);
+  const legacyOpenText = asString(raw.q10);
+
+  const normalized: QuizAnswers = {
+    q1: asString(raw.q1) as QuizAnswers["q1"] || sampleAnswers.q1,
+    q2: asStringArray(raw.q2).length > 0 ? asStringArray(raw.q2) : sampleAnswers.q2,
+    q3: asStringArray(raw.q3).length > 0 ? asStringArray(raw.q3) : sampleAnswers.q3,
+    q4: asScale(raw.q4, sampleAnswers.q4),
+    q5: asScale(raw.q5, asScale(raw.q4, sampleAnswers.q5)),
+    q6: asStringArray(raw.q6).length > 0 ? asStringArray(raw.q6) : mapLegacyBusinessAreasToWorkflowPressure(legacyBusinessAreas),
+    q7: asStringArray(raw.q7).length > 0 ? asStringArray(raw.q7) : mapLegacyBusinessAreasToWorkflowPressure(legacyBusinessAreas),
+    q8: asString(raw.q8) || legacyBarrier || sampleAnswers.q8,
+    q9: asScale(raw.q9, asScale(raw.q8, sampleAnswers.q9)),
+    q10: asStringArray(raw.q10).length > 0 ? asStringArray(raw.q10).slice(0, 3) : mapLegacyPriorities(legacyPriorities),
+    q11: asScale(raw.q11, 3),
+    q12: asStringArray(raw.q12).length > 0 ? asStringArray(raw.q12) : mapLegacyAdvantage(legacyAdvantage),
+    q13: asStringArray(raw.q13).length > 0 ? asStringArray(raw.q13) : getDefaultPilotTeam(role),
+    q14: asString(raw.q14) || mapLegacyBarrierToCapabilityGap(legacyBarrier),
+    q15: asString(raw.q15) || sampleAnswers.q15,
+    q16: asString(raw.q16) || legacyOpenText || sampleAnswers.q16,
+    q17: asString(raw.q17) || sampleAnswers.q17,
+  };
+
+  return normalized;
+}
 
 function hasUsableSupabaseConfig() {
   const supabaseUrl = process.env.SUPABASE_URL;
@@ -48,10 +184,7 @@ function mapResponseRow(row: ResponseRow): QuizSubmission {
     id: row.id,
     name: row.name,
     role: row.role,
-    answers: {
-      ...sampleAnswers,
-      ...row.answers,
-    },
+    answers: normalizeAnswers(row.answers, row.role),
     submittedAt: row.submitted_at,
   };
 }
