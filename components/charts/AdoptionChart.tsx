@@ -3,6 +3,8 @@ type AdoptionChartProps = {
 };
 
 export function AdoptionChart({ data }: AdoptionChartProps) {
+  const maxValue = Math.max(...data.map((item) => item.value), 1);
+
   return (
     <div className="space-y-4">
       {data.map((item) => (
@@ -12,7 +14,7 @@ export function AdoptionChart({ data }: AdoptionChartProps) {
             <span>{item.value}</span>
           </div>
           <div className="h-3 bg-mdlinx-secondary/10">
-            <div className="h-full bg-mdlinx-teal" style={{ width: `${item.value * 20}%` }} />
+            <div className="h-full bg-mdlinx-teal" style={{ width: `${(item.value / maxValue) * 100}%` }} />
           </div>
         </div>
       ))}

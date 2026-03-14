@@ -21,12 +21,20 @@ export function isQuestionAnswered(question: QuestionDefinition, value: QuizDraf
     return typeof value === "string" && value.length > 0;
   }
 
-  if (question.type === "multiple") {
-    return Array.isArray(value) && value.length > 0;
-  }
+  if (question.type === "multiple" || question.type === "ranking") {
+    if (!Array.isArray(value)) {
+      return false;
+    }
 
-  if (question.type === "ranking") {
-    return Array.isArray(value) && value.length === 3;
+    if (typeof question.minSelections === "number" && value.length < question.minSelections) {
+      return false;
+    }
+
+    if (typeof question.maxSelections === "number" && value.length > question.maxSelections) {
+      return false;
+    }
+
+    return value.length > 0;
   }
 
   if (question.type === "scale") {
@@ -49,10 +57,19 @@ export function getQuestionError(
   }
 
   if (question.type === "ranking") {
-    return "Select exactly 3 priorities.";
+    const exactCount =
+      typeof question.minSelections === "number" && question.minSelections === question.maxSelections
+        ? question.minSelections
+        : null;
+
+    return exactCount ? `Select exactly ${exactCount} priorities.` : "Complete the ranking to continue.";
   }
 
   if (question.type === "multiple") {
+    if (typeof question.minSelections === "number" && question.minSelections > 1) {
+      return `Select at least ${question.minSelections} options.`;
+    }
+
     return "Select at least one option.";
   }
 
@@ -128,15 +145,22 @@ export function parseQuizSubmission(draft: DraftQuizSubmission): { data: QuizSub
       role: draft.role as RoleOption,
       answers: {
         q1: draft.answers.q1 as QuizAnswers["q1"],
-        q2: draft.answers.q2,
-        q3: draft.answers.q3,
+        q2: draft.answers.q2 as QuizAnswers["q2"],
+        q3: draft.answers.q3 as QuizAnswers["q3"],
         q4: draft.answers.q4 as QuizAnswers["q4"],
-        q5: draft.answers.q5,
+        q5: draft.answers.q5 as QuizAnswers["q5"],
         q6: draft.answers.q6 as QuizAnswers["q6"],
-        q7: draft.answers.q7,
+        q7: draft.answers.q7 as QuizAnswers["q7"],
         q8: draft.answers.q8 as QuizAnswers["q8"],
         q9: draft.answers.q9 as QuizAnswers["q9"],
-        q10: draft.answers.q10.trim(),
+        q10: draft.answers.q10 as QuizAnswers["q10"],
+        q11: draft.answers.q11 as QuizAnswers["q11"],
+        q12: draft.answers.q12 as QuizAnswers["q12"],
+        q13: draft.answers.q13 as QuizAnswers["q13"],
+        q14: draft.answers.q14 as QuizAnswers["q14"],
+        q15: draft.answers.q15 as QuizAnswers["q15"],
+        q16: draft.answers.q16.trim(),
+        q17: draft.answers.q17.trim(),
       },
     },
     errors: {},

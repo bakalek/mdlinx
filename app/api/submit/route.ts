@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { saveResponse } from "@/lib/db";
+import { isSupabaseConfigured, saveResponse } from "@/lib/db";
 import { parseQuizSubmission, type DraftQuizSubmission } from "@/lib/validation";
 
 export async function POST(request: Request) {
@@ -16,6 +16,6 @@ export async function POST(request: Request) {
   return NextResponse.json({
     ok: true,
     response: savedResponse,
-    persistence: process.env.SUPABASE_URL ? "supabase" : "in-memory",
+    persistence: isSupabaseConfigured() ? "supabase" : "in-memory",
   });
 }

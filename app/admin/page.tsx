@@ -6,17 +6,9 @@ import { ToolLandscape } from "@/components/charts/ToolLandscape";
 import { UrgencySpectrum } from "@/components/charts/UrgencySpectrum";
 import { WordCloud } from "@/components/charts/WordCloud";
 import { Badge } from "@/components/ui/Badge";
+import { generateAiDashboardAnalysis, isOpenAIConfigured } from "@/lib/ai-analysis";
 import { isSupabaseConfigured, listResponses } from "@/lib/db";
-import { buildConversationStarters, getAverageMaturity, getMostCommonBarrier, getTopUseCase } from "@/lib/scoring";
-
-function countByLabel(values: string[]) {
-  return Object.entries(values.reduce<Record<string, number>>((accumulator, value) => {
-    accumulator[value] = (accumulator[value] ?? 0) + 1;
-    return accumulator;
-  }, {}))
-    .map(([label, value]) => ({ label: label.replaceAll("_", " "), value }))
-    .sort((a, b) => b.value - a.value);
-}
+import { buildDashboardSnapshot } from "@/lib/scoring";
 
 function SummaryCard({ label, value }: { label: string; value: string }) {
   return (
@@ -39,21 +31,15 @@ function ChartCard({ title, children }: { title: string; children: React.ReactNo
 export default async function AdminPage() {
   const responses = await listResponses();
   const usingSupabase = isSupabaseConfigured();
-  const conversationStarters = buildConversationStarters(responses);
-  const usageData = countByLabel(responses.map((response) => response.answers.q1));
-  const toolData = countByLabel(responses.flatMap((response) => response.answers.q2));
-  const priorityData = countByLabel(responses.flatMap((response) => response.answers.q7));
-  const wordCloudItems = countByLabel(
-    responses.flatMap((response) => response.answers.q10.toLowerCase().split(/\W+/).filter((word) => word.length > 5)),
-  )
-    .slice(0, 12)
-    .map((item) => item.label);
+  const aiEnabled = isOpenAIConfigured();
+  const snapshot = buildDashboardSnapshot(responses);
+  const aiAnalysis = await generateAiDashboardAnalysis(responses);
 
   return (
     <div className="space-y-8">
       <div className="space-y-3">
         <Badge>Admin dashboard</Badge>
-        <h1 className="font-serif text-4xl text-mdlinx-navy">AI Readiness Snapshot</h1>
+        <h1 className="font-serif text-4xl text-mdlinx-navy">MDLinx strategy snapshot</h1>
       </div>
 
       {!usingSupabase ? (
@@ -62,54 +48,119 @@ export default async function AdminPage() {
         </div>
       ) : null}
 
+      {!aiEnabled ? (
+        <div className="border border-dotted border-mdlinx-secondary/30 bg-white p-4 text-sm leading-7 text-mdlinx-secondary">
+          Add `OPENAI_API_KEY` in Vercel to enable AI-assisted strategy analysis on this dashboard.
+        </div>
+      ) : null}
+
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <SummaryCard label="Total responses" value={String(responses.length)} />
-        <SummaryCard label="Average maturity" value={`${getAverageMaturity(responses)}/5`} />
-        <SummaryCard label="Common barrier" value={getMostCommonBarrier(responses).replaceAll("_", " ")} />
-        <SummaryCard label="Top use case" value={getTopUseCase(responses).replaceAll("_", " ")} />
+        <SummaryCard label="Total responses" value={String(snapshot.totalResponses)} />
+        <SummaryCard label="Readiness index" value={`${snapshot.readinessIndex}/5`} />
+        <SummaryCard label="Top blocker" value={snapshot.topConstraint} />
+        <SummaryCard label="Top priority" value={snapshot.topPriority} />
       </section>
 
       <section className="grid gap-4 lg:grid-cols-2">
         <ChartCard title="AI usage frequency">
-          <AdoptionChart data={usageData} />
+          <AdoptionChart data={snapshot.usageData} />
         </ChartCard>
         <ChartCard title="Tool landscape">
-          <ToolLandscape data={toolData} />
+          <ToolLandscape data={snapshot.toolData} />
         </ChartCard>
       </section>
 
       <section className="grid gap-4 lg:grid-cols-2">
-        <ChartCard title="Average maturity">
-          <MaturityGauge value={getAverageMaturity(responses)} />
+        <ChartCard title="Composite readiness">
+          <MaturityGauge value={snapshot.readinessIndex} />
         </ChartCard>
-        <ChartCard title="Barrier breakdown">
-          <BarrierBreakdown data={responses.map((response) => ({ role: response.role, barrier: response.answers.q6 }))} />
+        <ChartCard title="Capability gap by role">
+          <BarrierBreakdown data={snapshot.capabilityGapByRole} />
         </ChartCard>
       </section>
 
       <section className="grid gap-4 lg:grid-cols-2">
-        <ChartCard title="Priority alignment">
-          <PriorityAlignment data={priorityData} />
+        <ChartCard title="Workflow pressure">
+          <PriorityAlignment data={snapshot.workflowPressureData} />
         </ChartCard>
-        <ChartCard title="Urgency spectrum">
+        <ChartCard title="Competitive urgency">
           <UrgencySpectrum
-            data={responses.map((response) => ({ name: response.name, role: response.role, urgency: response.answers.q8 }))}
+            data={snapshot.responseUrgencyData}
           />
         </ChartCard>
       </section>
 
       <section className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
-        <ChartCard title="Conversation starters">
+        <ChartCard title="Ranked strategic priorities">
+          <PriorityAlignment data={snapshot.priorityData} />
+        </ChartCard>
+        <ChartCard title="Durable advantage signals">
+          <ToolLandscape data={snapshot.durableEdgeData} />
+        </ChartCard>
+      </section>
+
+      <section className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
+        <ChartCard title="Opportunity areas">
+          <PriorityAlignment data={snapshot.opportunityData} />
+        </ChartCard>
+        <ChartCard title="Pilot-ready teams">
+          <ToolLandscape data={snapshot.pilotReadinessData} />
+        </ChartCard>
+      </section>
+
+      <section className="grid gap-4 lg:grid-cols-[1.05fr_0.95fr]">
+        <ChartCard title="Strategic signals from the survey">
           <div className="space-y-3">
-            {conversationStarters.map((starter) => (
+            {snapshot.strategicSignals.map((starter) => (
               <div key={starter} className="border border-dotted border-mdlinx-secondary/20 p-4 text-sm leading-7 text-mdlinx-secondary">
                 {starter}
               </div>
             ))}
           </div>
         </ChartCard>
-        <ChartCard title="Magic wand themes">
-          <WordCloud items={wordCloudItems} />
+        <ChartCard title="AI analysis">
+          {aiAnalysis ? (
+            <div className="space-y-5 text-sm leading-7 text-mdlinx-secondary">
+              <div className="border border-dotted border-mdlinx-secondary/20 p-4">{aiAnalysis.summary}</div>
+              <div className="space-y-2">
+                <p className="text-xs font-bold uppercase tracking-[0.18em] text-mdlinx-teal">Opportunities</p>
+                {aiAnalysis.opportunities.map((item) => (
+                  <div key={item} className="border border-dotted border-mdlinx-secondary/20 p-4">
+                    {item}
+                  </div>
+                ))}
+              </div>
+              <div className="space-y-2">
+                <p className="text-xs font-bold uppercase tracking-[0.18em] text-mdlinx-teal">Risks</p>
+                {aiAnalysis.risks.map((item) => (
+                  <div key={item} className="border border-dotted border-mdlinx-secondary/20 p-4">
+                    {item}
+                  </div>
+                ))}
+              </div>
+              <div className="space-y-2">
+                <p className="text-xs font-bold uppercase tracking-[0.18em] text-mdlinx-teal">Recommendations</p>
+                {aiAnalysis.recommendations.map((item) => (
+                  <div key={item} className="border border-dotted border-mdlinx-secondary/20 p-4">
+                    {item}
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="border border-dotted border-mdlinx-secondary/20 p-4 text-sm leading-7 text-mdlinx-secondary">
+              AI analysis will appear here once `OPENAI_API_KEY` is configured and responses are available.
+            </div>
+          )}
+        </ChartCard>
+      </section>
+
+      <section className="grid gap-4 lg:grid-cols-2">
+        <ChartCard title="Opportunity themes">
+          <WordCloud items={snapshot.openOpportunityThemes} />
+        </ChartCard>
+        <ChartCard title="Risk themes">
+          <WordCloud items={snapshot.openRiskThemes} />
         </ChartCard>
       </section>
     </div>

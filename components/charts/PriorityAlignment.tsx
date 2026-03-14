@@ -3,6 +3,8 @@ type PriorityAlignmentProps = {
 };
 
 export function PriorityAlignment({ data }: PriorityAlignmentProps) {
+  const maxValue = Math.max(...data.map((item) => item.value), 1);
+
   return (
     <div className="space-y-4">
       {data.map((item) => (
@@ -12,7 +14,7 @@ export function PriorityAlignment({ data }: PriorityAlignmentProps) {
             <span className="text-mdlinx-body">{item.value}</span>
           </div>
           <div className="h-2 bg-mdlinx-secondary/10">
-            <div className="h-full bg-mdlinx-teal" style={{ width: `${item.value * 25}%` }} />
+            <div className="h-full bg-mdlinx-teal" style={{ width: `${(item.value / maxValue) * 100}%` }} />
           </div>
         </div>
       ))}

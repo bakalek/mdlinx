@@ -1,13 +1,13 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { ProgressBar } from "@/components/ProgressBar";
 import { QuestionCard } from "@/components/QuestionCard";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
-import { emptyDraftAnswers, questions, roles, sectionOrder } from "@/lib/questions";
+import { emptyDraftAnswers, questions, roles, sectionOrder, sections } from "@/lib/questions";
 import { getStepErrors, isStepValid, parseQuizSubmission, type DraftQuizSubmission } from "@/lib/validation";
 
 const stepSections = ["Respondent info", ...sectionOrder];
@@ -28,7 +28,12 @@ export function QuizForm() {
     const currentSection = sectionOrder[step - 1];
     return questions.filter((question) => question.section === currentSection);
   }, [step]);
+  const currentSectionMeta = useMemo(() => sections.find((section) => section.id === sectionOrder[step - 1]), [step]);
   const currentErrors = getStepErrors(step, draft);
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [step]);
 
   function handleNextStep() {
     if (!isStepValid(step, draft)) {
@@ -111,6 +116,15 @@ export function QuizForm() {
         </section>
       ) : (
         <section className="space-y-6">
+          {currentSectionMeta ? (
+            <div className="space-y-3 border border-dotted border-mdlinx-secondary/30 bg-white p-6">
+              <Badge>{currentSectionMeta.title}</Badge>
+              <div className="space-y-2">
+                <h2 className="font-serif text-3xl text-mdlinx-navy">{currentSectionMeta.title}</h2>
+                <p className="text-mdlinx-secondary">{currentSectionMeta.description}</p>
+              </div>
+            </div>
+          ) : null}
           {currentQuestions.map((question) => (
             <QuestionCard
               key={question.id}

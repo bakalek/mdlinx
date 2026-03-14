@@ -1,3 +1,4 @@
+import { getOptionLabel } from "@/lib/questions";
 import { listResponses } from "@/lib/db";
 
 export default async function ResponsesPage() {
@@ -12,9 +13,10 @@ export default async function ResponsesPage() {
             <tr>
               <th className="px-4 py-3">Name</th>
               <th className="px-4 py-3">Role</th>
-              <th className="px-4 py-3">Maturity</th>
-              <th className="px-4 py-3">Barrier</th>
-              <th className="px-4 py-3">Magic wand</th>
+              <th className="px-4 py-3">Readiness</th>
+              <th className="px-4 py-3">Top priority</th>
+              <th className="px-4 py-3">Metric</th>
+              <th className="px-4 py-3">Opportunity</th>
             </tr>
           </thead>
           <tbody>
@@ -23,10 +25,11 @@ export default async function ResponsesPage() {
                 <td className="px-4 py-4 font-medium text-mdlinx-body">{response.name}</td>
                 <td className="px-4 py-4 text-mdlinx-secondary">{response.role}</td>
                 <td className="px-4 py-4 text-mdlinx-secondary">{response.answers.q4}/5</td>
-                <td className="px-4 py-4 capitalize text-mdlinx-secondary">
-                  {response.answers.q6.replaceAll("_", " ")}
+                <td className="px-4 py-4 text-mdlinx-secondary">
+                  {response.answers.q10.map((value) => getOptionLabel("q10", value)).join(", ")}
                 </td>
-                <td className="px-4 py-4 text-mdlinx-secondary">{response.answers.q10}</td>
+                <td className="px-4 py-4 text-mdlinx-secondary">{getOptionLabel("q15", response.answers.q15)}</td>
+                <td className="px-4 py-4 text-mdlinx-secondary">{response.answers.q16}</td>
               </tr>
             ))}
           </tbody>

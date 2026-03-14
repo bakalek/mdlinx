@@ -41,7 +41,7 @@ export function AdminAccessForm() {
         <div className="space-y-2">
           <h1 className="font-serif text-4xl text-mdlinx-navy">Admin access</h1>
           <p className="text-sm leading-7 text-mdlinx-secondary">
-            Enter the shared password to review team responses, chart summaries, and dinner conversation starters.
+            Enter the shared password to review team responses, dashboard summaries, and AI-assisted strategic analysis.
           </p>
         </div>
       </div>

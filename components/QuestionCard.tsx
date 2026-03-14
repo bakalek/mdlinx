@@ -21,6 +21,9 @@ export function QuestionCard({ question, value, onChange, error }: QuestionCardP
           <p className="text-xs font-bold uppercase tracking-[0.18em] text-mdlinx-teal">{question.label}</p>
           <h3 className="font-serif text-2xl text-mdlinx-navy">{question.prompt}</h3>
           {question.description ? <p className="text-sm text-mdlinx-secondary">{question.description}</p> : null}
+          {question.instruction && question.type !== "scale" ? (
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-mdlinx-secondary">{question.instruction}</p>
+          ) : null}
         </div>
       </div>
 
@@ -38,13 +41,10 @@ export function QuestionCard({ question, value, onChange, error }: QuestionCardP
           <CheckboxGroup
             options={question.options}
             values={Array.isArray(value) ? value : []}
-            maxSelections={question.type === "ranking" ? 3 : undefined}
+            maxSelections={question.maxSelections}
             showSelectionOrder={question.type === "ranking"}
             onChange={(nextValues) => onChange(nextValues)}
           />
-          {question.type === "ranking" ? (
-            <p className="text-xs uppercase tracking-[0.14em] text-mdlinx-secondary">Pick exactly 3 priorities.</p>
-          ) : null}
         </div>
       ) : null}
 
@@ -53,6 +53,9 @@ export function QuestionCard({ question, value, onChange, error }: QuestionCardP
           value={typeof value === "number" ? value : null}
           min={question.min}
           max={question.max}
+          instruction={question.instruction}
+          minLabel={question.scaleLabels?.min}
+          maxLabel={question.scaleLabels?.max}
           onChange={(nextValue) => onChange(nextValue as QuizDraftAnswers[keyof QuizDraftAnswers])}
         />
       ) : null}
@@ -61,7 +64,7 @@ export function QuestionCard({ question, value, onChange, error }: QuestionCardP
         <TextArea
           value={typeof value === "string" ? value : ""}
           onChange={(event) => onChange(event.target.value)}
-          placeholder="Share the most interesting thing you'd want on the table at dinner."
+          placeholder={question.placeholder ?? "Share your perspective."}
         />
       ) : null}
 
